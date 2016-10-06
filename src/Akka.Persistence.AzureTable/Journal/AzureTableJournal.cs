@@ -134,9 +134,16 @@ namespace Akka.Persistence.AzureTable.Journal
         /// <returns></returns>
         protected override async Task<IImmutableList<Exception>> WriteMessagesAsync(IEnumerable<AtomicWrite> messages)
         {
+            var messagesList = messages.ToList();
+
+            if (messagesList.Count == 0)
+            {
+                return Enumerable.Empty<Exception>()
+                    .ToImmutableList();
+            }
+
             var table = _client.Value.GetTableReference(_settings.TableName);
 
-            var messagesList = messages.ToList();
             var groupedTasks = messagesList.GroupBy(x => x.PersistenceId).ToDictionary(g => g.Key, async g =>
             {
                 var persistentMessages = g.SelectMany(aw => (IImmutableList<IPersistentRepresentation>)aw.Payload).ToList();
